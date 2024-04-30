@@ -5,109 +5,110 @@
 
 namespace skiplist_db {
     Status SkipList::insert(const Slice& key, const value_t& value) {
-        std::vector<std::shared_ptr<Node>> update(max_level_+1);
+        std::vector<Nodeptr> update;
         Status status;
-        std::mutex mtx;
-        mtx.lock();
+        Mutexguard mtx;
 
-        for (size_t i = 0; i <= level_; ++i) {
-            auto current_node = head_[i];
-            while (current_node->Next() != nullptr && current_node->Next()->key().compare(key) < 0) {
-                current_node = current_node->Next();
+        auto current_node = head_;
+        while (current_node) {
+            while (current_node->right_ && current_node->right_->key_.compare(key) < 0) {
+                current_node = current_node->right_;
             }
-            update[i] = current_node;
-        }
-
-        auto current_node = update[0]->Next();
-        if (current_node != nullptr && current_node->key().compare(key) == 0) {
-            status.set_key_exists(key);
-            return status;
-        }
-
-        size_t new_level = get_random_level();
-        if (new_level > level_) {
-            for (size_t i = level_+1; i <= new_level; ++i) {
-                update[i] = head_[i];
+            if (current_node->right_ && current_node->right_->key_.compare(key) == 0) {
+                status.set_key_exists(key);
+                return status;
             }
-            level_ = new_level;
+            update.emplace_back(current_node);
+            current_node = current_node->down_;
         }
 
-        for (size_t i = 0; i <= level_; ++i) {
-            auto new_node = std::make_shared<Node>(key, value, level_);
-            new_node->set_next(update[i]->Next());
-            update[i]->set_next(new_node);
+        bool insert = true;
+        while (insert && update.size() > 0) {
+            auto update_node = update.back();
+            update.pop_back();
+            auto new_node = std::make_shared<Node>(key, value);
+            new_node->right_ = update_node->right_;
+            update_node->right_ = new_node;
+            new_node->down_ = nullptr;
+            insert = rand() % 2;
         }
 
+        if (insert && level_ < max_level_) {
+            auto new_node = std::make_shared<Node>();
+            new_node->right_ = nullptr;
+            new_node->down_ = head_;
+            head_ = new_node;
+            ++level_;
+        }
         ++size_;
-        mtx.unlock();
         return status;
     }
 
-    Status SkipList::delete_node(const Slice& key) {
-        std::vector<std::shared_ptr<Node>> update(max_level_+1);
+    Status SkipList::erase(const Slice& key) {
+        std::vector<Nodeptr> update(max_level_+1);
         Status status;
-        std::mutex mtx;
-        mtx.lock();
+        Mutexguard mtx;
 
-        for (size_t i = 0; i <= level_; ++i) {
-            auto current_node = head_[i];
-            while (current_node->Next() != nullptr && current_node->Next()->key().compare(key) < 0) {
-                current_node = current_node->Next();
+        status.set_not_found(key);
+        auto current_node = head_;
+        while (current_node) {
+            while (current_node->right_ && current_node->right_->key_.compare(key) < 0) {
+                current_node = current_node->right_;
             }
-            update[i] = current_node;
-        }
-
-        auto current_node = update[0]->Next();
-        if (current_node == nullptr || current_node->key().compare(key) != 0) {
-            status.set_not_found(key);
-            return status;
-        }
-
-        for (size_t i = 0; i <= level_; ++i) {
-            if (update[i]->Next() != nullptr && update[i]->Next()->key().compare(key) == 0) {
-                update[i]->set_next(update[i]->Next()->Next());
+            if (current_node->right_ && current_node->right_->key_.compare(key) == 0) {
+                auto delete_node = current_node->right_;
+                current_node->right_ = delete_node->right_;
+                delete_node->right_ = nullptr;
+                delete_node->down_ = nullptr;
+                delete_node.reset();
+                status.set_ok();
+                break;
             }
+            current_node = current_node->down_;
         }
 
         --size_;
-        mtx.unlock();
         return status;
     }
 
     Status SkipList::search(const Slice& key, value_t& value) {
         Status status;
-        std::mutex mtx;
-        mtx.lock();
+        Mutexguard mtx;        
 
-        auto current_node = head_[0]->Next();
-        while (current_node != nullptr && current_node->key().compare(key) < 0) {
-            current_node = current_node->Next();
+        auto current_node = head_;
+        while (current_node) {
+            while (current_node->right_ && current_node->right_->key_.compare(key) < 0) {
+                current_node = current_node->right_;
+            }
+            if (current_node->right_ && current_node->right_->key_.compare(key) == 0) {
+                value = current_node->right_->value_;
+                status.set_ok();
+                return status;
+            }
+            current_node = current_node->down_;
         }
-
-        if (current_node == nullptr || current_node->key().compare(key) != 0) {
-            status.set_not_found(key);
-            return status;
-        }
-
-        value = current_node->value();
-        mtx.unlock();
+        status.set_not_found(key);
         return status;
     }
 
     Status SkipList::display() {
         Status status;
-        std::mutex mtx;
-        mtx.lock();
-        for (size_t i = 0; i <= level_; ++i) {
-            auto current_node = head_[i]->Next();
-            std::cout << "level " << i << ": ";
-            while (current_node != nullptr) {
-                std::cout << current_node->key().ToString() << "->" << current_node->value() << " ";
-                current_node = current_node->Next();
+        Mutexguard mtx;
+
+        auto current_node = head_;
+        auto level = level_;
+        while (current_node) {
+            auto temp = current_node;
+            std::cout << "level " << level << ": ";
+            --level;
+            while (temp) {
+                std::cout << temp->key_.data() << " ";
+                temp = temp->right_;
             }
             std::cout << std::endl;
+            current_node = current_node->down_;
         }
-        mtx.unlock();
+
         return status;
     }
 }; // namespace skiplist_db

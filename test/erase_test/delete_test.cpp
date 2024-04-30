@@ -32,7 +32,7 @@ int main() {
     delete_keys.push_back(keys[2]);
     delete_keys.push_back(keys[4]);
     for (auto k : delete_keys) {
-        status = skiplist.delete_node(k);
+        status = skiplist.erase(k);
         std::cout << status.what() << "\n";
     }
 

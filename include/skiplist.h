@@ -32,30 +32,27 @@ class SkipList {
 public:
     SkipList(size_t max_level) : max_level_(max_level), level_(0), size_(0) {
         srand((unsigned)time(NULL)); 
-        head_.resize(max_level_+1);
-        for (size_t i = 0; i <= max_level_; ++i) {
-            head_[i] = std::make_shared<Node>(max_level);
-        }
+        head_ = std::make_shared<Node>();
     }
 
     Status insert(const Slice& key, const value_t& value);
-    Status delete_node(const Slice& key);
+    Status erase(const Slice& key);
     Status search(const Slice& key, value_t& value);
     Status display();
 
-private:
-    size_t get_random_level() {
-        size_t level = 1;
-        while (rand() % 2) {
-            ++level;
-        }
-        return level < max_level_ ? level : max_level_;
-    }
+// private:
+//     size_t get_random_level() {
+//         size_t level = 1;
+//         while (rand() % 2) {
+//             ++level;
+//         }
+//         return level < max_level_ ? level : max_level_;
+//     }
 
 private:
     size_t max_level_; // max level of the skiplist
     size_t level_; // current level of the skiplist 
-    std::vector<std::shared_ptr<Node>> head_; // head node of the skiplist is a dummy node
+    Nodeptr head_; // head node of the skiplist is a dummy node
     Reader reader_; 
     Writer writer_;  
     size_t size_; // current number of nodes in the skiplist
