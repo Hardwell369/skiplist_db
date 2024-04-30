@@ -35,10 +35,10 @@ int main() {
 
     skiplist.display();
 
-    status = skiplist.delete_node("a");
+    status = skiplist.erase("a");
     std::cout << status.what() << "\n";
 
-    status = skiplist.delete_node("c");
+    status = skiplist.erase("c");
     std::cout << status.what() << "\n";
 
     status = skiplist.search("b", value_get);

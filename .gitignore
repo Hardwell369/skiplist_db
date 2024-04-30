@@ -1,5 +1,6 @@
+# ignore all files in the following directory
 /build/
-/test/insert_test/cmakefile/
-/test/erase_test/cmakefile/
-/test/search_test/cmakefile/
+/test/insert_test/cmake_file/
+/test/erase_test/cmake_file/
+/test/search_test/cmake_file/
 
