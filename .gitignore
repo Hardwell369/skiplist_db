@@ -1,0 +1,5 @@
+/build/
+/test/insert_test/cmakefile/
+/test/erase_test/cmakefile/
+/test/search_test/cmakefile/
+
