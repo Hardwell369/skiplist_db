@@ -40,15 +40,6 @@ public:
     Status search(const Slice& key, value_t& value);
     Status display();
 
-// private:
-//     size_t get_random_level() {
-//         size_t level = 1;
-//         while (rand() % 2) {
-//             ++level;
-//         }
-//         return level < max_level_ ? level : max_level_;
-//     }
-
 private:
     size_t max_level_; // max level of the skiplist
     size_t level_; // current level of the skiplist 
